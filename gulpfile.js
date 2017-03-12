@@ -19,6 +19,7 @@ gulp.task('babel', () => {
 gulp.task("js", function() {
     return gulp.src('./js/src/*.js')
         .pipe(babel({
+            compact: false,
             presets: ['es2015']
         }))
         .pipe(gulp.dest('./js/build'))
