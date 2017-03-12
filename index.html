@@ -1,0 +1,50 @@
+<html>
+
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="js/gravity.js"></script>
+    
+    <style>
+        html, body {
+            position: relative;
+            background-color: black;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        .body {
+            position: absolute;
+            border: 1px solid rgba(255, 255, 255, 1);
+            border-radius: 50%;
+        }
+        
+        
+        .sun {
+            background-color: yellow;
+        }
+        
+        .repeller {
+            background-color: purple;
+        }
+        
+        .planet {
+            background-color: #00ff00;
+        }
+        
+        #earth {
+            background-color: blue;
+        }
+        
+        #mars {
+            background-color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="field"></canvas>
+</body>
+
+</html>
