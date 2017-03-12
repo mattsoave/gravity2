@@ -1,3 +1,5 @@
+@import 'reset';
+
 html, body {
             position: relative;
             background-color: black;
@@ -24,12 +26,4 @@ html, body {
         
         .planet {
             background-color: #00ff00;
-        }
-        
-        #earth {
-            background-color: blue;
-        }
-        
-        #mars {
-            background-color: red;
         }
