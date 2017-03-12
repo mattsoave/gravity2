@@ -1,5 +1,6 @@
-const gravity = 15;
-const SIZE_MULTIPLIER = .5;
+const gravity = 20;
+const FPS = 200;
+const SIZE_MULTIPLIER = .6;
 
 var canvas, ctx;
 
@@ -10,6 +11,7 @@ function Body(mass, coords, isRepeller) {
     this.coords = coords;
     this.mass = mass;
     this.radius = this.mass * SIZE_MULTIPLIER / 2;
+    console.log(this.radius);
     this.isRepeller = isRepeller;
     this.fillStyle = `rgb(0,${Math.round(100 + Math.random()*155)},${Math.round(100 + Math.random()*155)})`;
     this.createEl = function () {
@@ -29,7 +31,7 @@ function Body(mass, coords, isRepeller) {
     this.draw = function () {
         ctx.fillStyle = this.fillStyle;
         ctx.beginPath();
-        ctx.arc(this.coords.x, this.coords.y, this.radius, 0, Math.PI * 2, false);
+        ctx.arc(this.coords.x - this.radius, this.coords.y - this.radius, this.radius, 0, Math.PI * 2, false);
         ctx.fill();
     }
 
@@ -40,7 +42,11 @@ function FixedBody(mass, coords, isRepeller) {
     Body.call(this, mass, coords, isRepeller);
     //        this.$el.addClass(isRepeller ? "repeller" : "sun");
     this.update = function () {
-        this.draw();
+        
+        
+
+        this.coords.x += .1;
+        this.coords.y += .05;
     }
 }
 
@@ -103,7 +109,6 @@ function MovableBody(mass, coords, velocity, isRepeller) {
         //            left: 800 + this.coords.x
         //        });
 
-        this.draw();
     }
 
 };
@@ -142,12 +147,6 @@ $(document).ready(function () {
     //    fixedBodies.push(new FixedBody(30, {x: 0,y: -450}, true));
     //    fixedBodies.push(new FixedBody(20, {x: 0,y: 0}, true));
 
-    fixedBodies.push(new FixedBody(30, {
-        x: 0,
-        y: 0
-    }, false));
-    //        fixedBodies.push(new FixedBody(1, {x: -300,y: 300}, true));
-
 
     //    movableBodies.push(new MovableBody(5, {
     //        x: 50,
@@ -175,46 +174,134 @@ $(document).ready(function () {
     //        movableBodies.push(new MovableBody(5, {x: a*10, y: 200}, {x: 1, y: -.5}, false)); 
     //    }
 
-    for (let a = 0; a < 1; a++) {
-        for (let b = 0; b < 30; b++) {
-            //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: b*20 + 250}, {x: 1 , y: 0}, false));    
-            //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: 300}, {x: 1 , y: -.5 + .1*b}, false));    
-            movableBodies.push(new MovableBody(5, {
-                x: a * 5,
-                y: 300 + b*3
-            }, {
-                x: 1,
-                y: -1.3 + Math.random() * 2
-            }, false));
-        }
-    }
-
     //    movableBodies.push(new MovableBody(5, {x: 40, y: 180}, {x: 0, y: 0}, false));
     //    movableBodies.push(new MovableBody(10, {x: 200, y: 180}, {x: 0, y: 0}, false));
 
+//    saves.attractorAndRepeller();
+
+    
+    
+    fixedBodies.push(new FixedBody(30, {
+            x: 0,
+            y: 0
+        }, false));
+
+        for (let a = 0; a < 1; a++) {
+            for (let b = 0; b < 1; b++) {
+                //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: b*20 + 250}, {x: 1 , y: 0}, false));    
+                //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: 300}, {x: 1 , y: -.5 + .1*b}, false));    
+                movableBodies.push(new MovableBody(5, {
+                    x: a * 5,
+                    y: 300 + b * 3
+                }, {
+                    x: 1 + .2 * (a / 20),
+                    y: -1 + 1 * (b / 30)
+                }, false));
+            }
+        }
+    
+    
+    
+    
+    
     setInterval(function () {
         updatePositions()
-    }, 5);
+    }, 1000 / FPS);
+
+    setInterval(function () {
+        redraw();
+    }, 1000 / FPS);
 });
 
 document.addEventListener("DOMContentLoaded", function (event) {
-    draw();
+    initializeCanvas();
 });
 
-function draw() {
+// resize the canvas to fill browser window dynamically
+window.addEventListener('resize', resizeCanvas, false);
+
+function initializeCanvas() {
     canvas = document.getElementById("field");
     ctx = canvas.getContext("2d");
-    ctx.translate(500, 500);
+    resizeCanvas();
+}
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    ctx.translate(window.innerWidth / 2, window.innerHeight / 2);
+    ctx.imageSmoothingEnabled = true;
 }
 
 function updatePositions() {
-//    ctx.clearRect(0, 0, 1000, 1000);
-    ctx.fillStyle = "rgba(0, 0, 0, .04)";
-    ctx.fillRect(-1000, -1000, 2000, 2000);
     for (let fixedBody of fixedBodies) {
         fixedBody.update();
     }
     for (let movableBody of movableBodies) {
         movableBody.update();
     }
+}
+
+function redraw() {
+    //    ctx.clearRect(0, 0, 1000, 1000);
+    //    ctx.fillStyle = "rgba(0, 0, 0, .04)";
+    //    ctx.fillRect(-1000, -1000, 2000, 2000);
+    for (let fixedBody of fixedBodies) {
+        fixedBody.draw();
+    }
+    for (let movableBody of movableBodies) {
+        movableBody.draw();
+    }
+}
+
+var saves = {
+    twoAttractors1: function () {
+        fixedBodies.push(new FixedBody(30, {
+            x: 0,
+            y: 0
+        }, false));
+        fixedBodies.push(new FixedBody(10, {
+            x: -300,
+            y: -300
+        }, false));
+
+        for (let a = 0; a < 1; a++) {
+            for (let b = 0; b < 30; b++) {
+                //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: b*20 + 250}, {x: 1 , y: 0}, false));    
+                //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: 300}, {x: 1 , y: -.5 + .1*b}, false));    
+                movableBodies.push(new MovableBody(5, {
+                    x: a * 5,
+                    y: 300 + b * 3
+                }, {
+                    x: 1 + .2 * (a / 20),
+                    y: -1 + 1 * (b / 30)
+                }, false));
+            }
+        }
+    },
+    attractorAndRepeller: function () {
+        fixedBodies.push(new FixedBody(30, {
+            x: 0,
+            y: 0
+        }, false));
+        fixedBodies.push(new FixedBody(10, {
+            x: -300,
+            y: -300
+        }, true));
+
+        for (let a = 0; a < 1; a++) {
+            for (let b = 0; b < 30; b++) {
+                //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: b*20 + 250}, {x: 1 , y: 0}, false));    
+                //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: 300}, {x: 1 , y: -.5 + .1*b}, false));    
+                movableBodies.push(new MovableBody(5, {
+                    x: a * 5,
+                    y: 300 + b * 3
+                }, {
+                    x: 1 + .2 * (a / 20),
+                    y: -1 + 1 * (b / 30)
+                }, false));
+            }
+        }
+    },
+    
 }
