@@ -2,6 +2,7 @@ const gulp = require('gulp');
 const babel = require('gulp-babel');
 const rename = require ('gulp-rename');
 const uglify = require('gulp-uglify');
+const sass = require('gulp-sass');
 
 const SRC = "./src";
 const DEST = "./build";
@@ -26,3 +27,8 @@ gulp.task("js", function() {
         .pipe(gulp.dest('./js/build'));
 });
 
+gulp.task('css', function () {
+  return gulp.src('./css/**/*.scss')
+    .pipe(sass().on('error', sass.logError))
+    .pipe(gulp.dest('./css'));
+});
