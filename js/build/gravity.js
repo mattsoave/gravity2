@@ -1,7 +1,8 @@
 "use strict";
 
-var gravity = 15;
-var SIZE_MULTIPLIER = .5;
+var gravity = 20;
+var FPS = 200;
+var SIZE_MULTIPLIER = .6;
 
 var canvas, ctx;
 
@@ -11,6 +12,7 @@ function Body(mass, coords, isRepeller) {
     this.coords = coords;
     this.mass = mass;
     this.radius = this.mass * SIZE_MULTIPLIER / 2;
+    console.log(this.radius);
     this.isRepeller = isRepeller;
     this.fillStyle = "rgb(0," + Math.round(100 + Math.random() * 155) + "," + Math.round(100 + Math.random() * 155) + ")";
     this.createEl = function () {
@@ -30,7 +32,7 @@ function Body(mass, coords, isRepeller) {
     this.draw = function () {
         ctx.fillStyle = this.fillStyle;
         ctx.beginPath();
-        ctx.arc(this.coords.x, this.coords.y, this.radius, 0, Math.PI * 2, false);
+        ctx.arc(this.coords.x - this.radius, this.coords.y - this.radius, this.radius, 0, Math.PI * 2, false);
         ctx.fill();
     };
 
@@ -41,7 +43,9 @@ function FixedBody(mass, coords, isRepeller) {
     Body.call(this, mass, coords, isRepeller);
     //        this.$el.addClass(isRepeller ? "repeller" : "sun");
     this.update = function () {
-        this.draw();
+
+        this.coords.x += .1;
+        this.coords.y += .05;
     };
 }
 
@@ -123,8 +127,6 @@ function MovableBody(mass, coords, velocity, isRepeller) {
         //            top: 500 - this.coords.y,
         //            left: 800 + this.coords.x
         //        });
-
-        this.draw();
     };
 };
 
@@ -159,12 +161,6 @@ $(document).ready(function () {
     //    fixedBodies.push(new FixedBody(30, {x: 0,y: -450}, true));
     //    fixedBodies.push(new FixedBody(20, {x: 0,y: 0}, true));
 
-    fixedBodies.push(new FixedBody(30, {
-        x: 0,
-        y: 0
-    }, false));
-    //        fixedBodies.push(new FixedBody(1, {x: -300,y: 300}, true));
-
 
     //    movableBodies.push(new MovableBody(5, {
     //        x: 50,
@@ -191,42 +187,61 @@ $(document).ready(function () {
     //        movableBodies.push(new MovableBody(5, {x: a*10, y: 200}, {x: 1, y: -.5}, false)); 
     //    }
 
+    //    movableBodies.push(new MovableBody(5, {x: 40, y: 180}, {x: 0, y: 0}, false));
+    //    movableBodies.push(new MovableBody(10, {x: 200, y: 180}, {x: 0, y: 0}, false));
+
+    //    saves.attractorAndRepeller();
+
+
+    fixedBodies.push(new FixedBody(30, {
+        x: 0,
+        y: 0
+    }, false));
+
     for (var a = 0; a < 1; a++) {
-        for (var b = 0; b < 30; b++) {
+        for (var b = 0; b < 1; b++) {
             //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: b*20 + 250}, {x: 1 , y: 0}, false));    
             //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: 300}, {x: 1 , y: -.5 + .1*b}, false));    
             movableBodies.push(new MovableBody(5, {
                 x: a * 5,
                 y: 300 + b * 3
             }, {
-                x: 1,
-                y: -1.3 + Math.random() * 2
+                x: 1 + .2 * (a / 20),
+                y: -1 + 1 * (b / 30)
             }, false));
         }
     }
 
-    //    movableBodies.push(new MovableBody(5, {x: 40, y: 180}, {x: 0, y: 0}, false));
-    //    movableBodies.push(new MovableBody(10, {x: 200, y: 180}, {x: 0, y: 0}, false));
-
     setInterval(function () {
         updatePositions();
-    }, 5);
+    }, 1000 / FPS);
+
+    setInterval(function () {
+        redraw();
+    }, 1000 / FPS);
 });
 
 document.addEventListener("DOMContentLoaded", function (event) {
-    draw();
+    initializeCanvas();
 });
 
-function draw() {
+// resize the canvas to fill browser window dynamically
+window.addEventListener('resize', resizeCanvas, false);
+
+function initializeCanvas() {
     canvas = document.getElementById("field");
     ctx = canvas.getContext("2d");
-    ctx.translate(500, 500);
+    resizeCanvas();
+}
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    ctx.translate(window.innerWidth / 2, window.innerHeight / 2);
+    ctx.imageSmoothingEnabled = true;
 }
 
 function updatePositions() {
-    //    ctx.clearRect(0, 0, 1000, 1000);
-    ctx.fillStyle = "rgba(0, 0, 0, .04)";
-    ctx.fillRect(-1000, -1000, 2000, 2000);
     var _iteratorNormalCompletion2 = true;
     var _didIteratorError2 = false;
     var _iteratorError2 = undefined;
@@ -277,3 +292,110 @@ function updatePositions() {
         }
     }
 }
+
+function redraw() {
+    //    ctx.clearRect(0, 0, 1000, 1000);
+    //    ctx.fillStyle = "rgba(0, 0, 0, .04)";
+    //    ctx.fillRect(-1000, -1000, 2000, 2000);
+    var _iteratorNormalCompletion4 = true;
+    var _didIteratorError4 = false;
+    var _iteratorError4 = undefined;
+
+    try {
+        for (var _iterator4 = fixedBodies[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+            var fixedBody = _step4.value;
+
+            fixedBody.draw();
+        }
+    } catch (err) {
+        _didIteratorError4 = true;
+        _iteratorError4 = err;
+    } finally {
+        try {
+            if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                _iterator4.return();
+            }
+        } finally {
+            if (_didIteratorError4) {
+                throw _iteratorError4;
+            }
+        }
+    }
+
+    var _iteratorNormalCompletion5 = true;
+    var _didIteratorError5 = false;
+    var _iteratorError5 = undefined;
+
+    try {
+        for (var _iterator5 = movableBodies[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+            var movableBody = _step5.value;
+
+            movableBody.draw();
+        }
+    } catch (err) {
+        _didIteratorError5 = true;
+        _iteratorError5 = err;
+    } finally {
+        try {
+            if (!_iteratorNormalCompletion5 && _iterator5.return) {
+                _iterator5.return();
+            }
+        } finally {
+            if (_didIteratorError5) {
+                throw _iteratorError5;
+            }
+        }
+    }
+}
+
+var saves = {
+    twoAttractors1: function twoAttractors1() {
+        fixedBodies.push(new FixedBody(30, {
+            x: 0,
+            y: 0
+        }, false));
+        fixedBodies.push(new FixedBody(10, {
+            x: -300,
+            y: -300
+        }, false));
+
+        for (var a = 0; a < 1; a++) {
+            for (var b = 0; b < 30; b++) {
+                //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: b*20 + 250}, {x: 1 , y: 0}, false));    
+                //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: 300}, {x: 1 , y: -.5 + .1*b}, false));    
+                movableBodies.push(new MovableBody(5, {
+                    x: a * 5,
+                    y: 300 + b * 3
+                }, {
+                    x: 1 + .2 * (a / 20),
+                    y: -1 + 1 * (b / 30)
+                }, false));
+            }
+        }
+    },
+    attractorAndRepeller: function attractorAndRepeller() {
+        fixedBodies.push(new FixedBody(30, {
+            x: 0,
+            y: 0
+        }, false));
+        fixedBodies.push(new FixedBody(10, {
+            x: -300,
+            y: -300
+        }, true));
+
+        for (var a = 0; a < 1; a++) {
+            for (var b = 0; b < 30; b++) {
+                //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: b*20 + 250}, {x: 1 , y: 0}, false));    
+                //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: 300}, {x: 1 , y: -.5 + .1*b}, false));    
+                movableBodies.push(new MovableBody(5, {
+                    x: a * 5,
+                    y: 300 + b * 3
+                }, {
+                    x: 1 + .2 * (a / 20),
+                    y: -1 + 1 * (b / 30)
+                }, false));
+            }
+        }
+    }
+
+};
