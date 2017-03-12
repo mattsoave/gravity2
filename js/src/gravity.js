@@ -149,7 +149,7 @@ $(document).ready(function () {
 //    }
     
 //    for (let a = 0; a < 20; a++) {
-//        movableBodies.push(new MovableBody(5, {x: a*10, y: 200}, {x: 1, y: -.5}, false));
+//        movableBodies.push(new MovableBody(5, {x: a*10, y: 200}, {x: 1, y: -.5}, false)); 
 //    }
     
     for (let a = 0; a < 1; a++) {
