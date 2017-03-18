@@ -3,12 +3,14 @@ const FPS = 10;
 
 const DEFAULT_UNIVERSE_SETTINGS = {
     gravity: 20,
-    sizeMultiplier: .6,
+    sizeMultiplier: 5,
     damping: 0,
     eraseTrails: true
 };
 
 var canvas, ctx;
+
+var n = 0;
 
 function Universe(settings) {
     
@@ -32,10 +34,13 @@ function Universe(settings) {
 
 function Body(mass, coords, velocity, isRepeller) {
     var self = this;
+    this.id = n;
+    n++;
     this.mass = mass;
     this.coords = coords;
     this.velocity = velocity;
-    this.radius = this.mass * DEFAULT_UNIVERSE_SETTINGS.sizeMultiplier / 2;
+//    this.radius = this.mass * DEFAULT_UNIVERSE_SETTINGS.sizeMultiplier / 2;
+    this.radius = DEFAULT_UNIVERSE_SETTINGS.sizeMultiplier*Math.pow((mass/Math.PI)*(3/4), 1/3);
     this.isRepeller = isRepeller;
     this.fillStyle = `rgb(0,${Math.round(100 + Math.random()*155)},${Math.round(100 + Math.random()*155)})`;
 
@@ -83,9 +88,7 @@ function MovableBody(mass, coords, velocity, isRepeller) {
         var force = {};
         var distance = this.calcDistanceFrom(other);
 
-        
         force.total = DEFAULT_UNIVERSE_SETTINGS.gravity * this.mass * other.mass / Math.pow(distance.total, 2);
-        
 
         force.direction = Math.atan2(distance.y, distance.x);
         force.directionDegs = force.direction * 180 / Math.PI;
@@ -147,6 +150,11 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
         force.direction = Math.atan2(distance.y, distance.x);
         force.directionDegs = force.direction * 180 / Math.PI;
         
+        if (distance.total < (1.5*(this.radius + other.radius))) {
+            force.total = 0;
+            console.log("too close");
+        }
+        
         return force;
     }
 
@@ -164,6 +172,17 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
                     x: this.velocity.x*(1 - DEFAULT_UNIVERSE_SETTINGS.damping/100000) + a.x,
                     y: this.velocity.y*(1 - DEFAULT_UNIVERSE_SETTINGS.damping/100000) + a.y,
                 }
+                if (this.calcDistanceFrom(otherBody).total < this.radius + otherBody.radius) {
+                    console.log("--------removing--------");
+                    console.log(bodyList);
+                    console.log(bodyList.indexOf(this));
+                    console.log(bodyList.indexOf(otherBody));
+                    bodyList.splice(bodyList.indexOf(this), 1);
+                    bodyList.splice(bodyList.indexOf(otherBody), 1);
+                    this.combine(otherBody);
+                    
+                    console.log(bodyList);
+                }
             }
         }
         
@@ -173,6 +192,27 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
 
     }
     
+    this.combine = function(other) {
+        var newMass = this.mass + other.mass;
+        var newCoords = this.coords;
+        
+        console.log("----");
+        console.log("----");
+        console.log("this:");
+        console.log(this.velocity);
+        console.log("----");
+        console.log("other:");
+        console.log(other.velocity);
+        console.log("----");
+        console.log("new:");
+        var newVelocity = {
+            x: (this.mass*this.velocity.x + other.mass*other.velocity.x)/(this.mass + other.mass),
+            y: (this.mass*this.velocity.y + other.mass*other.velocity.y)/(this.mass + other.mass)
+        };
+        
+        console.log(newVelocity);
+        bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, false, bodyList));
+    }
 
 };
 
@@ -333,7 +373,7 @@ function onMouseUp(e) {
     }
     
     console.log(newVelocity);
-    movableBodiesV2.push(new MovableBodyV2(5 + Math.random()*10, {x: clickOrigin.x, y: clickOrigin.y}, {x: newVelocity.x / 100, y: newVelocity.y / 100}, false, movableBodiesV2));
+    movableBodiesV2.push(new MovableBodyV2(20, {x: clickOrigin.x, y: clickOrigin.y}, {x: newVelocity.x / 100, y: newVelocity.y / 100}, false, movableBodiesV2));
 }
 
 function resizeCanvas() {
