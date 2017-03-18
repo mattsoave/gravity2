@@ -30,7 +30,7 @@ function Universe(settings) {
         }
     }
 }
- 
+  
 
 function Body(mass, coords, velocity, isRepeller) {
     var self = this;
