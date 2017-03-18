@@ -1,7 +1,5 @@
-const gravity = 20;
+
 const FPS = 10;
-const SIZE_MULTIPLIER = .6;
-const DAMPING = 0;
 
 const DEFAULT_UNIVERSE_SETTINGS = {
     gravity: 20,
@@ -12,24 +10,24 @@ const DEFAULT_UNIVERSE_SETTINGS = {
 
 var canvas, ctx;
 
-//function Universe(settings) {
-//    
-//    var fixedBodies = [],
-//        movableBodies = [];
-//    
-//    this.addBody = function(bodySettings) {
-//        switch (bodySettings.type) {
-//            case "fixed":
-//                fixedBodies.push(new MovableBody(bodySettings.mass, bodySettings.coords, bodySettings.isRepeller));
-//                break;
-//            case "movable":
-//                movableBodies.push(new MovableBody(bodySettings.mass, bodySettings.coords, bodySettings.velocity, false));
-//                break;
-//            default:
-//                break;
-//        }
-//    }
-//}
+function Universe(settings) {
+    
+    var fixedBodies = [],
+        movableBodies = [];
+    
+    this.addBody = function(bodySettings) {
+        switch (bodySettings.type) {
+            case "fixed":
+                fixedBodies.push(new MovableBody(bodySettings.mass, bodySettings.coords, bodySettings.isRepeller));
+                break;
+            case "movable":
+                movableBodies.push(new MovableBody(bodySettings.mass, bodySettings.coords, bodySettings.velocity, false));
+                break;
+            default:
+                break;
+        }
+    }
+}
 
 
 function Body(mass, coords, velocity, isRepeller) {
@@ -96,9 +94,10 @@ function MovableBody(mass, coords, velocity, isRepeller) {
     }
 
     this.update = function () {
+        for (let movableBody of movableBodies) {
+            console.log(movableBody === this);
+        }
         for (let fixedBody of fixedBodies) {
-            //        for (let fixedBodyIndex = 0; fixedBodyIndex < fixedBodies.length; fixedBodyIndex++) {
-            //            var other = fixedBodies[fixedBodyIndex];
             var force = this.calcForceFromOther(fixedBody);
             var a = {};
             a.total = force.total / this.mass;
@@ -112,9 +111,7 @@ function MovableBody(mass, coords, velocity, isRepeller) {
             }
             
         }
-
-//        this.coords.x += this.velocity.x*FPS/30;
-//        this.coords.y += this.velocity.y*FPS/30;
+        
         this.coords.x += this.velocity.x;
         this.coords.y += this.velocity.y;
 
@@ -123,9 +120,66 @@ function MovableBody(mass, coords, velocity, isRepeller) {
 
 };
 
+function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
+    Body.call(this, mass, coords, velocity, isRepeller);
+
+
+    this.calcDistanceFrom = function (other) {
+        var distance = {};
+
+        distance.x = this.coords.x - other.coords.x;
+        distance.y = this.coords.y - other.coords.y;
+
+        distance.total = Math.sqrt(Math.pow(distance.x, 2) + Math.pow(distance.y, 2));
+
+        return distance;
+    }
+
+    this.calcForceFromOther = function (other) {
+        
+        var force = {};
+        var distance = this.calcDistanceFrom(other);
+
+        
+        force.total = DEFAULT_UNIVERSE_SETTINGS.gravity * this.mass * other.mass / Math.pow(distance.total, 2);
+        
+
+        force.direction = Math.atan2(distance.y, distance.x);
+        force.directionDegs = force.direction * 180 / Math.PI;
+        
+        return force;
+    }
+
+    this.update = function () {
+        for (let otherBody of bodyList) {
+            if (otherBody !== this) {
+                var force = this.calcForceFromOther(otherBody);
+                var a = {};
+                a.total = force.total / this.mass;
+                a.x = -a.total * Math.cos(force.direction);
+                a.x = otherBody.isRepeller ? -a.x : a.x;
+                a.y = -a.total * Math.sin(force.direction);
+                a.y = otherBody.isRepeller ? -a.y : a.y;
+                this.velocity = {
+                    x: this.velocity.x*(1 - DEFAULT_UNIVERSE_SETTINGS.damping/100000) + a.x,
+                    y: this.velocity.y*(1 - DEFAULT_UNIVERSE_SETTINGS.damping/100000) + a.y,
+                }
+            }
+        }
+        
+        this.coords.x += this.velocity.x;
+        this.coords.y += this.velocity.y;
+
+
+    }
+    
+
+};
+
 
 var fixedBodies = [];
 var movableBodies = [];
+var movableBodiesV2 = [];
 var sun, sun2, sun3, earth, mars;
 
 
@@ -190,7 +244,7 @@ $(document).ready(function () {
 //    saves.singleOrbiter();
     
     
-        fixedBodies.push(new FixedBody(30, {x: 0, y: 0}, {x: .2, y: .1}, false));
+//        fixedBodies.push(new FixedBody(30, {x: 0, y: 0}, {x: .2, y: .1}, false));
 
 //        movableBodies.push(new MovableBody(5, {x: -700, y: -200}, {x: 1, y: -1}, false));
 
@@ -279,7 +333,7 @@ function onMouseUp(e) {
     }
     
     console.log(newVelocity);
-    movableBodies.push(new MovableBody(5 + Math.random()*10, {x: clickOrigin.x, y: clickOrigin.y}, {x: newVelocity.x / 100, y: newVelocity.y / 100}, false));
+    movableBodiesV2.push(new MovableBodyV2(5 + Math.random()*10, {x: clickOrigin.x, y: clickOrigin.y}, {x: newVelocity.x / 100, y: newVelocity.y / 100}, false, movableBodiesV2));
 }
 
 function resizeCanvas() {
@@ -297,6 +351,9 @@ function updatePositions() {
     for (let movableBody of movableBodies) {
         movableBody.update();
     }
+    for (let movableBody2 of movableBodiesV2) {
+        movableBody2.update();
+    }
 }
 
 function redraw() {
@@ -308,6 +365,9 @@ function redraw() {
     }
     for (let movableBody of movableBodies) {
         movableBody.draw();
+    }
+    for (let movableBody2 of movableBodiesV2) {
+        movableBody2.draw();
     }
 }
 //var timestamps = [0];

@@ -1,9 +1,6 @@
 "use strict";
 
-var gravity = 20;
 var FPS = 10;
-var SIZE_MULTIPLIER = .6;
-var DAMPING = 0;
 
 var DEFAULT_UNIVERSE_SETTINGS = {
     gravity: 20,
@@ -14,25 +11,24 @@ var DEFAULT_UNIVERSE_SETTINGS = {
 
 var canvas, ctx;
 
-//function Universe(settings) {
-//    
-//    var fixedBodies = [],
-//        movableBodies = [];
-//    
-//    this.addBody = function(bodySettings) {
-//        switch (bodySettings.type) {
-//            case "fixed":
-//                fixedBodies.push(new MovableBody(bodySettings.mass, bodySettings.coords, bodySettings.isRepeller));
-//                break;
-//            case "movable":
-//                movableBodies.push(new MovableBody(bodySettings.mass, bodySettings.coords, bodySettings.velocity, false));
-//                break;
-//            default:
-//                break;
-//        }
-//    }
-//}
+function Universe(settings) {
 
+    var fixedBodies = [],
+        movableBodies = [];
+
+    this.addBody = function (bodySettings) {
+        switch (bodySettings.type) {
+            case "fixed":
+                fixedBodies.push(new MovableBody(bodySettings.mass, bodySettings.coords, bodySettings.isRepeller));
+                break;
+            case "movable":
+                movableBodies.push(new MovableBody(bodySettings.mass, bodySettings.coords, bodySettings.velocity, false));
+                break;
+            default:
+                break;
+        }
+    };
+}
 
 function Body(mass, coords, velocity, isRepeller) {
     var self = this;
@@ -100,26 +96,11 @@ function MovableBody(mass, coords, velocity, isRepeller) {
         var _iteratorError = undefined;
 
         try {
-            for (var _iterator = fixedBodies[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                var fixedBody = _step.value;
+            for (var _iterator = movableBodies[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                var movableBody = _step.value;
 
-                //        for (let fixedBodyIndex = 0; fixedBodyIndex < fixedBodies.length; fixedBodyIndex++) {
-                //            var other = fixedBodies[fixedBodyIndex];
-                var force = this.calcForceFromOther(fixedBody);
-                var a = {};
-                a.total = force.total / this.mass;
-                a.x = -a.total * Math.cos(force.direction);
-                a.x = fixedBody.isRepeller ? -a.x : a.x;
-                a.y = -a.total * Math.sin(force.direction);
-                a.y = fixedBody.isRepeller ? -a.y : a.y;
-                this.velocity = {
-                    x: this.velocity.x * (1 - DEFAULT_UNIVERSE_SETTINGS.damping / 100000) + a.x,
-                    y: this.velocity.y * (1 - DEFAULT_UNIVERSE_SETTINGS.damping / 100000) + a.y
-                };
+                console.log(movableBody === this);
             }
-
-            //        this.coords.x += this.velocity.x*FPS/30;
-            //        this.coords.y += this.velocity.y*FPS/30;
         } catch (err) {
             _didIteratorError = true;
             _iteratorError = err;
@@ -135,6 +116,111 @@ function MovableBody(mass, coords, velocity, isRepeller) {
             }
         }
 
+        var _iteratorNormalCompletion2 = true;
+        var _didIteratorError2 = false;
+        var _iteratorError2 = undefined;
+
+        try {
+            for (var _iterator2 = fixedBodies[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                var fixedBody = _step2.value;
+
+                var force = this.calcForceFromOther(fixedBody);
+                var a = {};
+                a.total = force.total / this.mass;
+                a.x = -a.total * Math.cos(force.direction);
+                a.x = fixedBody.isRepeller ? -a.x : a.x;
+                a.y = -a.total * Math.sin(force.direction);
+                a.y = fixedBody.isRepeller ? -a.y : a.y;
+                this.velocity = {
+                    x: this.velocity.x * (1 - DEFAULT_UNIVERSE_SETTINGS.damping / 100000) + a.x,
+                    y: this.velocity.y * (1 - DEFAULT_UNIVERSE_SETTINGS.damping / 100000) + a.y
+                };
+            }
+        } catch (err) {
+            _didIteratorError2 = true;
+            _iteratorError2 = err;
+        } finally {
+            try {
+                if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                    _iterator2.return();
+                }
+            } finally {
+                if (_didIteratorError2) {
+                    throw _iteratorError2;
+                }
+            }
+        }
+
+        this.coords.x += this.velocity.x;
+        this.coords.y += this.velocity.y;
+    };
+};
+
+function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
+    Body.call(this, mass, coords, velocity, isRepeller);
+
+    this.calcDistanceFrom = function (other) {
+        var distance = {};
+
+        distance.x = this.coords.x - other.coords.x;
+        distance.y = this.coords.y - other.coords.y;
+
+        distance.total = Math.sqrt(Math.pow(distance.x, 2) + Math.pow(distance.y, 2));
+
+        return distance;
+    };
+
+    this.calcForceFromOther = function (other) {
+
+        var force = {};
+        var distance = this.calcDistanceFrom(other);
+
+        force.total = DEFAULT_UNIVERSE_SETTINGS.gravity * this.mass * other.mass / Math.pow(distance.total, 2);
+
+        force.direction = Math.atan2(distance.y, distance.x);
+        force.directionDegs = force.direction * 180 / Math.PI;
+
+        return force;
+    };
+
+    this.update = function () {
+        var _iteratorNormalCompletion3 = true;
+        var _didIteratorError3 = false;
+        var _iteratorError3 = undefined;
+
+        try {
+            for (var _iterator3 = bodyList[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                var otherBody = _step3.value;
+
+                if (otherBody !== this) {
+                    var force = this.calcForceFromOther(otherBody);
+                    var a = {};
+                    a.total = force.total / this.mass;
+                    a.x = -a.total * Math.cos(force.direction);
+                    a.x = otherBody.isRepeller ? -a.x : a.x;
+                    a.y = -a.total * Math.sin(force.direction);
+                    a.y = otherBody.isRepeller ? -a.y : a.y;
+                    this.velocity = {
+                        x: this.velocity.x * (1 - DEFAULT_UNIVERSE_SETTINGS.damping / 100000) + a.x,
+                        y: this.velocity.y * (1 - DEFAULT_UNIVERSE_SETTINGS.damping / 100000) + a.y
+                    };
+                }
+            }
+        } catch (err) {
+            _didIteratorError3 = true;
+            _iteratorError3 = err;
+        } finally {
+            try {
+                if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                    _iterator3.return();
+                }
+            } finally {
+                if (_didIteratorError3) {
+                    throw _iteratorError3;
+                }
+            }
+        }
+
         this.coords.x += this.velocity.x;
         this.coords.y += this.velocity.y;
     };
@@ -142,6 +228,7 @@ function MovableBody(mass, coords, velocity, isRepeller) {
 
 var fixedBodies = [];
 var movableBodies = [];
+var movableBodiesV2 = [];
 var sun, sun2, sun3, earth, mars;
 
 $(document).ready(function () {
@@ -203,7 +290,7 @@ $(document).ready(function () {
     //    saves.singleOrbiter();
 
 
-    fixedBodies.push(new FixedBody(30, { x: 0, y: 0 }, { x: .2, y: .1 }, false));
+    //        fixedBodies.push(new FixedBody(30, {x: 0, y: 0}, {x: .2, y: .1}, false));
 
     //        movableBodies.push(new MovableBody(5, {x: -700, y: -200}, {x: 1, y: -1}, false));
 
@@ -279,7 +366,7 @@ function onMouseUp(e) {
     };
 
     console.log(newVelocity);
-    movableBodies.push(new MovableBody(5 + Math.random() * 10, { x: clickOrigin.x, y: clickOrigin.y }, { x: newVelocity.x / 100, y: newVelocity.y / 100 }, false));
+    movableBodiesV2.push(new MovableBodyV2(5 + Math.random() * 10, { x: clickOrigin.x, y: clickOrigin.y }, { x: newVelocity.x / 100, y: newVelocity.y / 100 }, false, movableBodiesV2));
 }
 
 function resizeCanvas() {
@@ -291,61 +378,6 @@ function resizeCanvas() {
 }
 
 function updatePositions() {
-    var _iteratorNormalCompletion2 = true;
-    var _didIteratorError2 = false;
-    var _iteratorError2 = undefined;
-
-    try {
-        for (var _iterator2 = fixedBodies[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-            var fixedBody = _step2.value;
-
-            fixedBody.update();
-        }
-    } catch (err) {
-        _didIteratorError2 = true;
-        _iteratorError2 = err;
-    } finally {
-        try {
-            if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                _iterator2.return();
-            }
-        } finally {
-            if (_didIteratorError2) {
-                throw _iteratorError2;
-            }
-        }
-    }
-
-    var _iteratorNormalCompletion3 = true;
-    var _didIteratorError3 = false;
-    var _iteratorError3 = undefined;
-
-    try {
-        for (var _iterator3 = movableBodies[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-            var movableBody = _step3.value;
-
-            movableBody.update();
-        }
-    } catch (err) {
-        _didIteratorError3 = true;
-        _iteratorError3 = err;
-    } finally {
-        try {
-            if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                _iterator3.return();
-            }
-        } finally {
-            if (_didIteratorError3) {
-                throw _iteratorError3;
-            }
-        }
-    }
-}
-
-function redraw() {
-    if (DEFAULT_UNIVERSE_SETTINGS.eraseTrails) ctx.clearRect(-2000, -2000, 4000, 4000);
-    //    ctx.fillStyle = "rgba(0, 0, 0, .04)";
-    //    ctx.fillRect(-1000, -1000, 2000, 2000);
     var _iteratorNormalCompletion4 = true;
     var _didIteratorError4 = false;
     var _iteratorError4 = undefined;
@@ -354,7 +386,7 @@ function redraw() {
         for (var _iterator4 = fixedBodies[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
             var fixedBody = _step4.value;
 
-            fixedBody.draw();
+            fixedBody.update();
         }
     } catch (err) {
         _didIteratorError4 = true;
@@ -379,7 +411,7 @@ function redraw() {
         for (var _iterator5 = movableBodies[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
             var movableBody = _step5.value;
 
-            movableBody.draw();
+            movableBody.update();
         }
     } catch (err) {
         _didIteratorError5 = true;
@@ -392,6 +424,111 @@ function redraw() {
         } finally {
             if (_didIteratorError5) {
                 throw _iteratorError5;
+            }
+        }
+    }
+
+    var _iteratorNormalCompletion6 = true;
+    var _didIteratorError6 = false;
+    var _iteratorError6 = undefined;
+
+    try {
+        for (var _iterator6 = movableBodiesV2[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+            var movableBody2 = _step6.value;
+
+            movableBody2.update();
+        }
+    } catch (err) {
+        _didIteratorError6 = true;
+        _iteratorError6 = err;
+    } finally {
+        try {
+            if (!_iteratorNormalCompletion6 && _iterator6.return) {
+                _iterator6.return();
+            }
+        } finally {
+            if (_didIteratorError6) {
+                throw _iteratorError6;
+            }
+        }
+    }
+}
+
+function redraw() {
+    if (DEFAULT_UNIVERSE_SETTINGS.eraseTrails) ctx.clearRect(-2000, -2000, 4000, 4000);
+    //    ctx.fillStyle = "rgba(0, 0, 0, .04)";
+    //    ctx.fillRect(-1000, -1000, 2000, 2000);
+    var _iteratorNormalCompletion7 = true;
+    var _didIteratorError7 = false;
+    var _iteratorError7 = undefined;
+
+    try {
+        for (var _iterator7 = fixedBodies[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+            var fixedBody = _step7.value;
+
+            fixedBody.draw();
+        }
+    } catch (err) {
+        _didIteratorError7 = true;
+        _iteratorError7 = err;
+    } finally {
+        try {
+            if (!_iteratorNormalCompletion7 && _iterator7.return) {
+                _iterator7.return();
+            }
+        } finally {
+            if (_didIteratorError7) {
+                throw _iteratorError7;
+            }
+        }
+    }
+
+    var _iteratorNormalCompletion8 = true;
+    var _didIteratorError8 = false;
+    var _iteratorError8 = undefined;
+
+    try {
+        for (var _iterator8 = movableBodies[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
+            var movableBody = _step8.value;
+
+            movableBody.draw();
+        }
+    } catch (err) {
+        _didIteratorError8 = true;
+        _iteratorError8 = err;
+    } finally {
+        try {
+            if (!_iteratorNormalCompletion8 && _iterator8.return) {
+                _iterator8.return();
+            }
+        } finally {
+            if (_didIteratorError8) {
+                throw _iteratorError8;
+            }
+        }
+    }
+
+    var _iteratorNormalCompletion9 = true;
+    var _didIteratorError9 = false;
+    var _iteratorError9 = undefined;
+
+    try {
+        for (var _iterator9 = movableBodiesV2[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
+            var movableBody2 = _step9.value;
+
+            movableBody2.draw();
+        }
+    } catch (err) {
+        _didIteratorError9 = true;
+        _iteratorError9 = err;
+    } finally {
+        try {
+            if (!_iteratorNormalCompletion9 && _iterator9.return) {
+                _iterator9.return();
+            }
+        } finally {
+            if (_didIteratorError9) {
+                throw _iteratorError9;
             }
         }
     }
