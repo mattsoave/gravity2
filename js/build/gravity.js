@@ -6,7 +6,7 @@ var DEFAULT_UNIVERSE_SETTINGS = {
     gravity: 20,
     sizeMultiplier: 5,
     damping: 0,
-    eraseTrails: true
+    eraseTrails: false
 };
 
 var canvas, ctx;
@@ -42,12 +42,13 @@ function Body(mass, coords, velocity, isRepeller) {
     //    this.radius = this.mass * DEFAULT_UNIVERSE_SETTINGS.sizeMultiplier / 2;
     this.radius = DEFAULT_UNIVERSE_SETTINGS.sizeMultiplier * Math.pow(mass / Math.PI * (3 / 4), 1 / 3);
     this.isRepeller = isRepeller;
-    this.fillStyle = "rgb(0," + Math.round(100 + Math.random() * 155) + "," + Math.round(100 + Math.random() * 155) + ")";
+    //    this.fillStyle = `rgb(0,${Math.round(100 + Math.random()*155)},${Math.round(100 + Math.random()*155)})`;
+    this.fillStyle = isRepeller ? "red" : "blue";
 
     this.draw = function () {
         ctx.fillStyle = this.fillStyle;
         ctx.beginPath();
-        ctx.arc(this.coords.x - this.radius, this.coords.y - this.radius, this.radius, 0, Math.PI * 2, false);
+        ctx.arc(this.coords.x, this.coords.y, this.radius, 0, Math.PI * 2, false);
         ctx.fill();
     };
 
@@ -207,20 +208,16 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
                     var a = {};
                     a.total = force.total / this.mass;
                     a.x = -a.total * Math.cos(force.direction);
-                    a.x = otherBody.isRepeller ? -a.x : a.x;
+                    a.x = this.isRepeller !== otherBody.isRepeller ? -a.x : a.x;
                     a.y = -a.total * Math.sin(force.direction);
-                    a.y = otherBody.isRepeller ? -a.y : a.y;
+                    a.y = this.isRepeller !== otherBody.isRepeller ? -a.y : a.y;
                     this.velocity = {
                         x: this.velocity.x * (1 - DEFAULT_UNIVERSE_SETTINGS.damping / 100000) + a.x,
                         y: this.velocity.y * (1 - DEFAULT_UNIVERSE_SETTINGS.damping / 100000) + a.y
                     };
                     if (this.calcDistanceFrom(otherBody).total < this.radius + otherBody.radius) {
-                        console.log("--------removing--------");
-                        console.log(bodyList);
-                        console.log(bodyList.indexOf(this));
-                        console.log(bodyList.indexOf(otherBody));
-                        bodyList.splice(bodyList.indexOf(this), 1);
-                        bodyList.splice(bodyList.indexOf(otherBody), 1);
+                        this.remove();
+                        otherBody.remove();
                         this.combine(otherBody);
 
                         console.log(bodyList);
@@ -246,26 +243,33 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
         this.coords.y += this.velocity.y;
     };
 
-    this.combine = function (other) {
-        var newMass = this.mass + other.mass;
-        var newCoords = this.coords;
+    this.remove = function () {
+        var index = bodyList.indexOf(this);
+        if (index > -1) {
+            bodyList.splice(index, 1);
+        }
+    };
 
-        console.log("----");
-        console.log("----");
-        console.log("this:");
-        console.log(this.velocity);
-        console.log("----");
-        console.log("other:");
-        console.log(other.velocity);
-        console.log("----");
-        console.log("new:");
+    this.combine = function (other) {
+        var newCoords = this.coords;
+        var newMass;
         var newVelocity = {
             x: (this.mass * this.velocity.x + other.mass * other.velocity.x) / (this.mass + other.mass),
             y: (this.mass * this.velocity.y + other.mass * other.velocity.y) / (this.mass + other.mass)
         };
 
-        console.log(newVelocity);
-        bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, false, bodyList));
+        if (this.isRepeller === other.isRepeller) {
+            newMass = this.mass + other.mass;
+            bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, this.isRepeller, bodyList));
+        } else {
+            if (this.mass > other.mass) {
+                newMass = this.mass - other.mass;
+                bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, this.isRepeller, bodyList));
+            } else if (this.mass < other.mass) {
+                newMass = other.mass - this.mass;
+                bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, other.isRepeller, bodyList));
+            }
+        }
     };
 };
 
@@ -382,6 +386,9 @@ function initializeCanvas() {
     canvas = document.getElementById("field");
     canvas.addEventListener("mousedown", onMouseDown, false);
     canvas.addEventListener("mouseup", onMouseUp, false);
+    canvas.addEventListener('contextmenu', function (evt) {
+        evt.preventDefault();
+    }, false);
     ctx = canvas.getContext("2d");
     resizeCanvas();
 }
@@ -403,13 +410,19 @@ function onMouseUp(e) {
         y: e.pageY
     };
 
+    var isRepeller = false;
+    if (e.button === 2) {
+        isRepeller = true;
+        e.preventDefault();
+    }
+
     var newVelocity = {
         x: clickDestination.x - clickOrigin.x,
         y: clickDestination.y - clickOrigin.y
     };
 
     console.log(newVelocity);
-    movableBodiesV2.push(new MovableBodyV2(20, { x: clickOrigin.x, y: clickOrigin.y }, { x: newVelocity.x / 100, y: newVelocity.y / 100 }, false, movableBodiesV2));
+    movableBodiesV2.push(new MovableBodyV2(5, { x: clickOrigin.x, y: clickOrigin.y }, { x: newVelocity.x / 100, y: newVelocity.y / 100 }, isRepeller, movableBodiesV2));
 }
 
 function resizeCanvas() {
@@ -498,9 +511,9 @@ function updatePositions() {
 }
 
 function redraw() {
-    if (DEFAULT_UNIVERSE_SETTINGS.eraseTrails) ctx.clearRect(-2000, -2000, 4000, 4000);
-    //    ctx.fillStyle = "rgba(0, 0, 0, .04)";
-    //    ctx.fillRect(-1000, -1000, 2000, 2000);
+    //        if (DEFAULT_UNIVERSE_SETTINGS.eraseTrails) ctx.clearRect(-2000, -2000, 4000, 4000);
+    ctx.fillStyle = "rgba(0, 0, 0, .02)";
+    ctx.fillRect(-2000, -2000, 4000, 4000);
     var _iteratorNormalCompletion7 = true;
     var _didIteratorError7 = false;
     var _iteratorError7 = undefined;
