@@ -32,6 +32,7 @@ function Universe(settings) {
 function Body(mass, coords, velocity, isRepeller) {
     var self = this;
     this.id = n;
+    this.isActive = true;
     n++;
     this.mass = mass;
     this.coords = coords;
@@ -149,7 +150,7 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
         force.direction = Math.atan2(distance.y, distance.x);
         force.directionDegs = force.direction * 180 / Math.PI;
         
-        if (distance.total < (1.5*(this.radius + other.radius))) {
+        if (distance.total < (1.2*(this.radius + other.radius))) {
             force.total = 0;
             console.log("too close");
         }
@@ -159,7 +160,7 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
 
     this.update = function () {
         for (let otherBody of bodyList) {
-            if (otherBody !== this) {
+            if (otherBody !== this && this.isActive && otherBody.isActive) {
                 var force = this.calcForceFromOther(otherBody);
                 var a = {};
                 a.total = force.total / this.mass;
@@ -188,6 +189,7 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
     }
     
     this.remove = function() {
+        this.isActive = false;
      var index = bodyList.indexOf(this);
         if (index > -1) {
             bodyList.splice(index, 1);
@@ -202,8 +204,11 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
             y: (this.mass*this.velocity.y + other.mass*other.velocity.y)/(this.mass + other.mass)
         };
         
+        
+        
         if (this.isRepeller === other.isRepeller) {
             newMass = this.mass + other.mass;
+            console.log(newMass);
             bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, this.isRepeller, bodyList));
         } else {
             if (this.mass > other.mass) {
@@ -214,6 +219,8 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
                 bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, other.isRepeller, bodyList));
             }
         }
+        
+        console.log(this.mass + " + " + other.mass + " = " + newMass);
         
         
     }
@@ -232,6 +239,8 @@ $(document).ready(function () {
 //        fixedBodies.push(new FixedBody(30, {x: 0, y: 0}, {x: .2, y: .1}, false));
 
 //        movableBodies.push(new MovableBody(5, {x: -700, y: -200}, {x: 1, y: -1}, false));
+    
+    
 
     
 });
