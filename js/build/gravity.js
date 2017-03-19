@@ -33,6 +33,7 @@ function Universe(settings) {
 function Body(mass, coords, velocity, isRepeller) {
     var self = this;
     this.id = n;
+    this.isActive = true;
     n++;
     this.mass = mass;
     this.coords = coords;
@@ -184,7 +185,7 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
         force.direction = Math.atan2(distance.y, distance.x);
         force.directionDegs = force.direction * 180 / Math.PI;
 
-        if (distance.total < 1.5 * (this.radius + other.radius)) {
+        if (distance.total < 1.2 * (this.radius + other.radius)) {
             force.total = 0;
             console.log("too close");
         }
@@ -201,7 +202,7 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
             for (var _iterator3 = bodyList[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
                 var otherBody = _step3.value;
 
-                if (otherBody !== this) {
+                if (otherBody !== this && this.isActive && otherBody.isActive) {
                     var force = this.calcForceFromOther(otherBody);
                     var a = {};
                     a.total = force.total / this.mass;
@@ -242,6 +243,7 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
     };
 
     this.remove = function () {
+        this.isActive = false;
         var index = bodyList.indexOf(this);
         if (index > -1) {
             bodyList.splice(index, 1);
@@ -258,6 +260,7 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
 
         if (this.isRepeller === other.isRepeller) {
             newMass = this.mass + other.mass;
+            console.log(newMass);
             bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, this.isRepeller, bodyList));
         } else {
             if (this.mass > other.mass) {
@@ -268,6 +271,8 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
                 bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, other.isRepeller, bodyList));
             }
         }
+
+        console.log(this.mass + " + " + other.mass + " = " + newMass);
     };
 };
 
