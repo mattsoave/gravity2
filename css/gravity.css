@@ -200,7 +200,8 @@ input[type=button] {
 .clearfix {
   zoom: 1; }
 
-html, body {
+html,
+body {
   position: relative;
   background-color: black; }
 

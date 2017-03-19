@@ -1,6 +1,3 @@
-
-const FPS = 10;
-
 const DEFAULT_UNIVERSE_SETTINGS = {
     gravity: 20,
     sizeMultiplier: 5,
@@ -8,9 +5,9 @@ const DEFAULT_UNIVERSE_SETTINGS = {
     eraseTrails: false
 };
 
-var canvas, ctx;
-
-var n = 0;
+var canvas,
+    ctx,
+    n = 0;
 
 function Universe(settings) {
     
@@ -232,84 +229,11 @@ var sun, sun2, sun3, earth, mars;
 
 $(document).ready(function () {
 
-
-    //    fixedBodies.push(new FixedBody(15, {
-    //        x: 0,
-    //        y: -100
-    //    }, true));
-    //
-    //    fixedBodies.push(new FixedBody(10, {
-    //        x: 300,
-    //        y: 400
-    //    }, true));
-    //
-    //    fixedBodies.push(new FixedBody(10, {
-    //        x: -300,
-    //        y: 400
-    //    }, true));
-
-    //    fixedBodies.push(new FixedBody(30, {x: -300,y: -300}, true));
-    //    fixedBodies.push(new FixedBody(30, {x: 300,y: -300}, true));
-    //    fixedBodies.push(new FixedBody(30, {x: -300,y: 300}, true));
-    //    fixedBodies.push(new FixedBody(30, {x: 300,y: 300}, true));
-    //    fixedBodies.push(new FixedBody(30, {x: 450,y: 0}, true));
-    //    fixedBodies.push(new FixedBody(60, {x: -450,y: 0}, true));
-    //    fixedBodies.push(new FixedBody(30, {x: 0,y: 450}, true));
-    //    fixedBodies.push(new FixedBody(30, {x: 0,y: -450}, true));
-    //    fixedBodies.push(new FixedBody(20, {x: 0,y: 0}, true));
-
-
-    //    movableBodies.push(new MovableBody(5, {
-    //        x: 50,
-    //        y: 200
-    //    }, {
-    //        x: 0,
-    //        y: 0
-    //    }, false));
-    //    
-    //    movableBodies.push(new MovableBody(5, {
-    //        x: 0,
-    //        y: 0
-    //    }, {
-    //        x: -1,
-    //        y: 1
-    //    }, false));
-
-
-
-    //    for (let a = 0; a < 20; a++) {
-    //        movableBodies.push(new MovableBody(5, {x: 0, y: 180}, {x: -1.3 + a*(2/10), y: 0}, false));
-    //    }
-
-    //    for (let a = 0; a < 20; a++) {
-    //        movableBodies.push(new MovableBody(5, {x: a*10, y: 200}, {x: 1, y: -.5}, false)); 
-    //    }
-
-    //    movableBodies.push(new MovableBody(5, {x: 40, y: 180}, {x: 0, y: 0}, false));
-    //    movableBodies.push(new MovableBody(10, {x: 200, y: 180}, {x: 0, y: 0}, false));
-
-//    saves.singleOrbiter();
-    
-    
 //        fixedBodies.push(new FixedBody(30, {x: 0, y: 0}, {x: .2, y: .1}, false));
 
 //        movableBodies.push(new MovableBody(5, {x: -700, y: -200}, {x: 1, y: -1}, false));
 
-     
     
-    
-    
-    
-    
-    
-    
-//    setInterval(function () {
-//        updatePositions()
-//    }, 1000 / FPS);
-//
-//    setInterval(function () {
-//        redraw();
-//    }, 1000 / FPS);
 });
 var scale = 1;
 var originx = 0;
@@ -349,6 +273,8 @@ document.addEventListener("DOMContentLoaded", function (event) {
 // resize the canvas to fill browser window dynamically
 window.addEventListener('resize', resizeCanvas, false);
 
+/* --- Event functions --- */
+
 function initializeCanvas() {
     canvas = document.getElementById("field");
     canvas.addEventListener("mousedown", onMouseDown, false);
@@ -359,13 +285,10 @@ function initializeCanvas() {
 }
 
 function onMouseDown(e) {
-    
     clickOrigin = {
         x: e.pageX,
         y: e.pageY
     };
-    console.log(e);
-//        movableBodies.push(new MovableBody(5, {x: 0, y: 0}, {x: Math.random()*2 - 1, y: Math.random()*2 - 1}, false));
 }
 
 function onMouseUp(e) {
@@ -375,18 +298,14 @@ function onMouseUp(e) {
         y: e.pageY
     };
     
-    var isRepeller = false;
-    if (e.button === 2) {
-        isRepeller = true;
-        e.preventDefault();
-    }
+    // Right mouse button? If so, make a repeller
+    var isRepeller = e.button === 2 ? true : false;
     
     var newVelocity = {
         x: clickDestination.x - clickOrigin.x,
         y: clickDestination.y - clickOrigin.y
-    }
+    };
     
-    console.log(newVelocity);
     movableBodiesV2.push(new MovableBodyV2(5, {x: clickOrigin.x, y: clickOrigin.y}, {x: newVelocity.x / 100, y: newVelocity.y / 100}, isRepeller, movableBodiesV2));
 }
 
@@ -394,7 +313,6 @@ function resizeCanvas() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 //    ctx.translate(window.innerWidth / 2, window.innerHeight / 2);
-//    ctx.scale(.3,.3);
     ctx.imageSmoothingEnabled = true;
 }
 
@@ -412,8 +330,8 @@ function updatePositions() {
 
 function redraw() {
 //        if (DEFAULT_UNIVERSE_SETTINGS.eraseTrails) ctx.clearRect(-2000, -2000, 4000, 4000);
-        ctx.fillStyle = "rgba(0, 0, 0, .02)";
-        ctx.fillRect(-2000, -2000, 4000, 4000);
+    ctx.fillStyle = "rgba(0, 0, 0, .02)";
+    ctx.fillRect(-2000, -2000, 4000, 4000);
     for (let fixedBody of fixedBodies) {
         fixedBody.draw();
     }
@@ -440,17 +358,6 @@ var saves = {
     singleOrbiter: function() {
         fixedBodies.push(new FixedBody(30, {x: -1000, y: -1000}, {x: .2, y: .1}, false));
 
-//        for (let a = 0; a < 1; a++) {
-//            for (let b = 0; b < 1; b++) {
-//                movableBodies.push(new MovableBody(5, {
-//                    x: a * 5,
-//                    y: 300 + b * 3
-//                }, {
-//                    x: 1 + .2 * (a / 20),
-//                    y: -1 + 1 * (b / 30)
-//                }, false));
-//            }
-//        }
         
         movableBodies.push(new MovableBody(5, {x: -800, y: -800}, {x: 1, y: -1}, false));
     },
@@ -489,9 +396,7 @@ var saves = {
         }, true));
 
         for (let a = 0; a < 1; a++) {
-            for (let b = 0; b < 30; b++) {
-                //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: b*20 + 250}, {x: 1 , y: 0}, false));    
-                //            movableBodies.push(new MovableBody(2 + Math.random()*10, {x: a*5, y: 300}, {x: 1 , y: -.5 + .1*b}, false));    
+            for (let b = 0; b < 30; b++) {   
                 movableBodies.push(new MovableBody(5, {
                     x: a * 5,
                     y: 300 + b * 3
@@ -519,9 +424,6 @@ var saves = {
         }
     },
     manyRepellersRandom: function() {
-//        for (let a = 0; a < 3; a++) {
-//            fixedBodies.push(new FixedBody(10 + Math.random()*30, {x: -500 + Math.random()*1000,y: -500 + Math.random()*1000}, true));    
-//        }
         
         fixedBodies.push(new FixedBody(20 + Math.random()*5, {x: -500 + Math.random()*100,y: -500 + Math.random()*100}, true));    
         fixedBodies.push(new FixedBody(20 + Math.random()*5, {x: -300 + Math.random()*100,y: 300 + Math.random()*100}, true));    
@@ -534,10 +436,6 @@ var saves = {
         }
     },
     oneAttractorManyPlanets: function() {
-//        for (let a = 0; a < 3; a++) {
-//            fixedBodies.push(new FixedBody(10 + Math.random()*30, {x: -500 + Math.random()*1000,y: -500 + Math.random()*1000}, true));    
-//        }
-        
         fixedBodies.push(new FixedBody(20 + Math.random()*5, {x: -100 + Math.random()*200,y: -100 + Math.random()*200}, false));    
         
         for (let a = 0; a < 50; a++) {
@@ -547,10 +445,6 @@ var saves = {
         }
     },
     oneAttractorManyPlanets2: function() {
-//        for (let a = 0; a < 3; a++) {
-//            fixedBodies.push(new FixedBody(10 + Math.random()*30, {x: -500 + Math.random()*1000,y: -500 + Math.random()*1000}, true));    
-//        }
-        
         fixedBodies.push(new FixedBody(30 + Math.random()*5, {x: -100 + Math.random()*200,y: -100 + Math.random()*200}, false));    
         
         for (let a = 0; a < 25; a++) {
@@ -565,9 +459,6 @@ var saves = {
             y: -200
         };
         var radius = 50;
-//        for (let a = 0; a < 3; a++) {
-//            fixedBodies.push(new FixedBody(10 + Math.random()*30, {x: -500 + Math.random()*1000,y: -500 + Math.random()*1000}, true));    
-//        }
         var layers = 10;
         var dotsPerLayer = 20;
         

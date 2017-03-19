@@ -1,13 +1,13 @@
 @import 'reset';
+html,
+body {
+    position: relative;
+    background-color: black;
+}
 
-html, body {
-            position: relative;
-            background-color: black;
-        }
-        
-        * {
-            box-sizing: border-box;
-        }
+* {
+    box-sizing: border-box;
+}
 
 #field {
     width: 100%;
