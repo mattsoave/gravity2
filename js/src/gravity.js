@@ -227,10 +227,141 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
 
 };
 
+function MovableBodyV3(options, bodyList) {
+    var self = this;
+    this.id = n;
+    this.isActive = true;
+    n++;
+    Object.assign(this, options);
+    // this.mass = mass;
+    // this.coords = coords;
+    // this.velocity = velocity;
+    // this.isRepeller = isRepeller;
+    this.radius = DEFAULT_UNIVERSE_SETTINGS.sizeMultiplier*Math.pow((this.mass/Math.PI)*(3/4), 1/3);
+    this.fillStyle = this.isRepeller ? "red" : "blue";
+
+    this.draw = function () {
+        ctx.fillStyle = this.fillStyle;
+        ctx.beginPath();
+        ctx.arc(this.coords.x , this.coords.y, this.radius, 0, Math.PI * 2, false);
+        ctx.fill();
+    }
+
+    this.draw();
+
+
+    this.calcDistanceFrom = function (other) {
+        var distance = {};
+
+        distance.x = this.coords.x - other.coords.x;
+        distance.y = this.coords.y - other.coords.y;
+
+        distance.total = Math.sqrt(Math.pow(distance.x, 2) + Math.pow(distance.y, 2));
+
+        return distance;
+    }
+
+    this.calcForceFromOther = function (other) {
+        
+        var force = {};
+        var distance = this.calcDistanceFrom(other);
+
+        
+        force.total = DEFAULT_UNIVERSE_SETTINGS.gravity * this.mass * other.mass / Math.pow(distance.total, 2);
+        
+
+        force.direction = Math.atan2(distance.y, distance.x);
+        force.directionDegs = force.direction * 180 / Math.PI;
+        
+        if (distance.total < (1.2*(this.radius + other.radius))) {
+            force.total = 0;
+            console.log("too close");
+        }
+        
+        return force;
+    }
+
+    this.update = function () {
+        if (this.isInfluenced) {
+            for (let otherBody of bodyList) {
+                if (otherBody !== this && this.isActive && otherBody.isActive) {
+                    var force = this.calcForceFromOther(otherBody);
+                    var a = {};
+                    a.total = force.total / this.mass;
+                    a.x = -a.total * Math.cos(force.direction);
+                    a.x = this.isRepeller !== otherBody.isRepeller ? -a.x : a.x;
+                    a.y = -a.total * Math.sin(force.direction);
+                    a.y = this.isRepeller !== otherBody.isRepeller ? -a.y : a.y;
+                    this.velocity = {
+                        x: this.velocity.x*(1 - DEFAULT_UNIVERSE_SETTINGS.damping/100000) + a.x,
+                        y: this.velocity.y*(1 - DEFAULT_UNIVERSE_SETTINGS.damping/100000) + a.y,
+                    }
+                    if (this.calcDistanceFrom(otherBody).total < this.radius + otherBody.radius) {
+                        this.remove();
+                        otherBody.remove();
+                        this.combine(otherBody);
+                        
+                        console.log(bodyList);
+                    }
+                }
+            }
+        }
+        
+        
+        this.coords.x += this.velocity.x;
+        this.coords.y += this.velocity.y;
+
+
+    }
+    
+    this.remove = function() {
+        this.isActive = false;
+     var index = bodyList.indexOf(this);
+        if (index > -1) {
+            bodyList.splice(index, 1);
+        }
+    }
+    
+    this.combine = function(other) {
+        var newCoords = this.coords;
+        var newMass;
+        var newVelocity = {
+            x: (this.mass*this.velocity.x + other.mass*other.velocity.x)/(this.mass + other.mass),
+            y: (this.mass*this.velocity.y + other.mass*other.velocity.y)/(this.mass + other.mass)
+        };
+        
+        
+        
+        if (this.isRepeller === other.isRepeller) {
+            newMass = this.mass + other.mass;
+            bodyList.push(new MovableBodyV3({
+                coords: newCoords,
+                mass: newMass,
+                velocity: newVelocity,
+                isRepeller: this.isRepeller,
+                isInfluenced: this.isInfluenced && other.isInfluenced
+            }, bodyList));
+            console.log(this.isInfluenced && other.isInfluenced);
+        } else {
+            if (this.mass > other.mass) {
+                newMass = this.mass - other.mass;
+                bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, this.isRepeller, bodyList));
+            } else if (this.mass < other.mass) {
+                newMass = other.mass - this.mass;
+                bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, other.isRepeller, bodyList));
+            }
+        }
+        
+        
+    }
+
+};
+
 
 var fixedBodies = [];
 var movableBodies = [];
 var movableBodiesV2 = [];
+var movableBodiesV3 = [];
 var sun, sun2, sun3, earth, mars;
 
 
@@ -241,7 +372,13 @@ $(document).ready(function () {
 //        movableBodies.push(new MovableBody(5, {x: -700, y: -200}, {x: 1, y: -1}, false));
     
     
-
+    movableBodiesV3.push(new MovableBodyV3({
+        mass: 100, 
+        coords: {x: 500, y: 500}, 
+        velocity: {x: 0 , y: 0}, 
+        isRepeller: false,
+        isInfluenced: false
+    }, movableBodiesV3));
     
 });
 var scale = 1;
@@ -315,7 +452,13 @@ function onMouseUp(e) {
         y: clickDestination.y - clickOrigin.y
     };
     
-    movableBodiesV2.push(new MovableBodyV2(5, {x: clickOrigin.x, y: clickOrigin.y}, {x: newVelocity.x / 100, y: newVelocity.y / 100}, isRepeller, movableBodiesV2));
+    movableBodiesV3.push(new MovableBodyV3({
+        mass: 5, 
+        coords: {x: clickOrigin.x, y: clickOrigin.y}, 
+        velocity: {x: newVelocity.x / 100, y: newVelocity.y / 100}, 
+        isRepeller: isRepeller,
+        isInfluenced: true
+    }, movableBodiesV3));
 }
 
 function resizeCanvas() {
@@ -335,6 +478,9 @@ function updatePositions() {
     for (let movableBody2 of movableBodiesV2) {
         movableBody2.update();
     }
+    for (let movableBody3 of movableBodiesV3) {
+        movableBody3.update();
+    }
 }
 
 function redraw() {
@@ -349,6 +495,9 @@ function redraw() {
     }
     for (let movableBody2 of movableBodiesV2) {
         movableBody2.draw();
+    }
+    for (let movableBody3 of movableBodiesV3) {
+        movableBody3.draw();
     }
 }
 //var timestamps = [0];

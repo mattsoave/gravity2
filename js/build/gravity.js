@@ -276,9 +276,150 @@ function MovableBodyV2(mass, coords, velocity, isRepeller, bodyList) {
     };
 };
 
+function MovableBodyV3(options, bodyList) {
+    var self = this;
+    this.id = n;
+    this.isActive = true;
+    n++;
+    Object.assign(this, options);
+    // this.mass = mass;
+    // this.coords = coords;
+    // this.velocity = velocity;
+    // this.isRepeller = isRepeller;
+    this.radius = DEFAULT_UNIVERSE_SETTINGS.sizeMultiplier * Math.pow(this.mass / Math.PI * (3 / 4), 1 / 3);
+    this.fillStyle = this.isRepeller ? "red" : "blue";
+
+    this.draw = function () {
+        ctx.fillStyle = this.fillStyle;
+        ctx.beginPath();
+        ctx.arc(this.coords.x, this.coords.y, this.radius, 0, Math.PI * 2, false);
+        ctx.fill();
+    };
+
+    this.draw();
+
+    this.calcDistanceFrom = function (other) {
+        var distance = {};
+
+        distance.x = this.coords.x - other.coords.x;
+        distance.y = this.coords.y - other.coords.y;
+
+        distance.total = Math.sqrt(Math.pow(distance.x, 2) + Math.pow(distance.y, 2));
+
+        return distance;
+    };
+
+    this.calcForceFromOther = function (other) {
+
+        var force = {};
+        var distance = this.calcDistanceFrom(other);
+
+        force.total = DEFAULT_UNIVERSE_SETTINGS.gravity * this.mass * other.mass / Math.pow(distance.total, 2);
+
+        force.direction = Math.atan2(distance.y, distance.x);
+        force.directionDegs = force.direction * 180 / Math.PI;
+
+        if (distance.total < 1.2 * (this.radius + other.radius)) {
+            force.total = 0;
+            console.log("too close");
+        }
+
+        return force;
+    };
+
+    this.update = function () {
+        if (this.isInfluenced) {
+            var _iteratorNormalCompletion4 = true;
+            var _didIteratorError4 = false;
+            var _iteratorError4 = undefined;
+
+            try {
+                for (var _iterator4 = bodyList[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                    var otherBody = _step4.value;
+
+                    if (otherBody !== this && this.isActive && otherBody.isActive) {
+                        var force = this.calcForceFromOther(otherBody);
+                        var a = {};
+                        a.total = force.total / this.mass;
+                        a.x = -a.total * Math.cos(force.direction);
+                        a.x = this.isRepeller !== otherBody.isRepeller ? -a.x : a.x;
+                        a.y = -a.total * Math.sin(force.direction);
+                        a.y = this.isRepeller !== otherBody.isRepeller ? -a.y : a.y;
+                        this.velocity = {
+                            x: this.velocity.x * (1 - DEFAULT_UNIVERSE_SETTINGS.damping / 100000) + a.x,
+                            y: this.velocity.y * (1 - DEFAULT_UNIVERSE_SETTINGS.damping / 100000) + a.y
+                        };
+                        if (this.calcDistanceFrom(otherBody).total < this.radius + otherBody.radius) {
+                            this.remove();
+                            otherBody.remove();
+                            this.combine(otherBody);
+
+                            console.log(bodyList);
+                        }
+                    }
+                }
+            } catch (err) {
+                _didIteratorError4 = true;
+                _iteratorError4 = err;
+            } finally {
+                try {
+                    if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                        _iterator4.return();
+                    }
+                } finally {
+                    if (_didIteratorError4) {
+                        throw _iteratorError4;
+                    }
+                }
+            }
+        }
+
+        this.coords.x += this.velocity.x;
+        this.coords.y += this.velocity.y;
+    };
+
+    this.remove = function () {
+        this.isActive = false;
+        var index = bodyList.indexOf(this);
+        if (index > -1) {
+            bodyList.splice(index, 1);
+        }
+    };
+
+    this.combine = function (other) {
+        var newCoords = this.coords;
+        var newMass;
+        var newVelocity = {
+            x: (this.mass * this.velocity.x + other.mass * other.velocity.x) / (this.mass + other.mass),
+            y: (this.mass * this.velocity.y + other.mass * other.velocity.y) / (this.mass + other.mass)
+        };
+
+        if (this.isRepeller === other.isRepeller) {
+            newMass = this.mass + other.mass;
+            bodyList.push(new MovableBodyV3({
+                coords: newCoords,
+                mass: newMass,
+                velocity: newVelocity,
+                isRepeller: this.isRepeller,
+                isInfluenced: this.isInfluenced && other.isInfluenced
+            }, bodyList));
+            console.log(this.isInfluenced && other.isInfluenced);
+        } else {
+            if (this.mass > other.mass) {
+                newMass = this.mass - other.mass;
+                bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, this.isRepeller, bodyList));
+            } else if (this.mass < other.mass) {
+                newMass = other.mass - this.mass;
+                bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, other.isRepeller, bodyList));
+            }
+        }
+    };
+};
+
 var fixedBodies = [];
 var movableBodies = [];
 var movableBodiesV2 = [];
+var movableBodiesV3 = [];
 var sun, sun2, sun3, earth, mars;
 
 $(document).ready(function () {
@@ -288,6 +429,13 @@ $(document).ready(function () {
     //        movableBodies.push(new MovableBody(5, {x: -700, y: -200}, {x: 1, y: -1}, false));
 
 
+    movableBodiesV3.push(new MovableBodyV3({
+        mass: 100,
+        coords: { x: 500, y: 500 },
+        velocity: { x: 0, y: 0 },
+        isRepeller: false,
+        isInfluenced: false
+    }, movableBodiesV3));
 });
 var scale = 1;
 var originx = 0;
@@ -356,7 +504,13 @@ function onMouseUp(e) {
         y: clickDestination.y - clickOrigin.y
     };
 
-    movableBodiesV2.push(new MovableBodyV2(5, { x: clickOrigin.x, y: clickOrigin.y }, { x: newVelocity.x / 100, y: newVelocity.y / 100 }, isRepeller, movableBodiesV2));
+    movableBodiesV3.push(new MovableBodyV3({
+        mass: 5,
+        coords: { x: clickOrigin.x, y: clickOrigin.y },
+        velocity: { x: newVelocity.x / 100, y: newVelocity.y / 100 },
+        isRepeller: isRepeller,
+        isInfluenced: true
+    }, movableBodiesV3));
 }
 
 function resizeCanvas() {
@@ -367,40 +521,15 @@ function resizeCanvas() {
 }
 
 function updatePositions() {
-    var _iteratorNormalCompletion4 = true;
-    var _didIteratorError4 = false;
-    var _iteratorError4 = undefined;
-
-    try {
-        for (var _iterator4 = fixedBodies[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-            var fixedBody = _step4.value;
-
-            fixedBody.update();
-        }
-    } catch (err) {
-        _didIteratorError4 = true;
-        _iteratorError4 = err;
-    } finally {
-        try {
-            if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                _iterator4.return();
-            }
-        } finally {
-            if (_didIteratorError4) {
-                throw _iteratorError4;
-            }
-        }
-    }
-
     var _iteratorNormalCompletion5 = true;
     var _didIteratorError5 = false;
     var _iteratorError5 = undefined;
 
     try {
-        for (var _iterator5 = movableBodies[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-            var movableBody = _step5.value;
+        for (var _iterator5 = fixedBodies[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
+            var fixedBody = _step5.value;
 
-            movableBody.update();
+            fixedBody.update();
         }
     } catch (err) {
         _didIteratorError5 = true;
@@ -422,10 +551,10 @@ function updatePositions() {
     var _iteratorError6 = undefined;
 
     try {
-        for (var _iterator6 = movableBodiesV2[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
-            var movableBody2 = _step6.value;
+        for (var _iterator6 = movableBodies[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
+            var movableBody = _step6.value;
 
-            movableBody2.update();
+            movableBody.update();
         }
     } catch (err) {
         _didIteratorError6 = true;
@@ -441,21 +570,16 @@ function updatePositions() {
             }
         }
     }
-}
 
-function redraw() {
-    //        if (DEFAULT_UNIVERSE_SETTINGS.eraseTrails) ctx.clearRect(-2000, -2000, 4000, 4000);
-    ctx.fillStyle = "rgba(0, 0, 0, .02)";
-    ctx.fillRect(-2000, -2000, 4000, 4000);
     var _iteratorNormalCompletion7 = true;
     var _didIteratorError7 = false;
     var _iteratorError7 = undefined;
 
     try {
-        for (var _iterator7 = fixedBodies[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
-            var fixedBody = _step7.value;
+        for (var _iterator7 = movableBodiesV2[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+            var movableBody2 = _step7.value;
 
-            fixedBody.draw();
+            movableBody2.update();
         }
     } catch (err) {
         _didIteratorError7 = true;
@@ -477,10 +601,10 @@ function redraw() {
     var _iteratorError8 = undefined;
 
     try {
-        for (var _iterator8 = movableBodies[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
-            var movableBody = _step8.value;
+        for (var _iterator8 = movableBodiesV3[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
+            var movableBody3 = _step8.value;
 
-            movableBody.draw();
+            movableBody3.update();
         }
     } catch (err) {
         _didIteratorError8 = true;
@@ -496,16 +620,21 @@ function redraw() {
             }
         }
     }
+}
 
+function redraw() {
+    //        if (DEFAULT_UNIVERSE_SETTINGS.eraseTrails) ctx.clearRect(-2000, -2000, 4000, 4000);
+    ctx.fillStyle = "rgba(0, 0, 0, .02)";
+    ctx.fillRect(-2000, -2000, 4000, 4000);
     var _iteratorNormalCompletion9 = true;
     var _didIteratorError9 = false;
     var _iteratorError9 = undefined;
 
     try {
-        for (var _iterator9 = movableBodiesV2[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
-            var movableBody2 = _step9.value;
+        for (var _iterator9 = fixedBodies[Symbol.iterator](), _step9; !(_iteratorNormalCompletion9 = (_step9 = _iterator9.next()).done); _iteratorNormalCompletion9 = true) {
+            var fixedBody = _step9.value;
 
-            movableBody2.draw();
+            fixedBody.draw();
         }
     } catch (err) {
         _didIteratorError9 = true;
@@ -518,6 +647,81 @@ function redraw() {
         } finally {
             if (_didIteratorError9) {
                 throw _iteratorError9;
+            }
+        }
+    }
+
+    var _iteratorNormalCompletion10 = true;
+    var _didIteratorError10 = false;
+    var _iteratorError10 = undefined;
+
+    try {
+        for (var _iterator10 = movableBodies[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
+            var movableBody = _step10.value;
+
+            movableBody.draw();
+        }
+    } catch (err) {
+        _didIteratorError10 = true;
+        _iteratorError10 = err;
+    } finally {
+        try {
+            if (!_iteratorNormalCompletion10 && _iterator10.return) {
+                _iterator10.return();
+            }
+        } finally {
+            if (_didIteratorError10) {
+                throw _iteratorError10;
+            }
+        }
+    }
+
+    var _iteratorNormalCompletion11 = true;
+    var _didIteratorError11 = false;
+    var _iteratorError11 = undefined;
+
+    try {
+        for (var _iterator11 = movableBodiesV2[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
+            var movableBody2 = _step11.value;
+
+            movableBody2.draw();
+        }
+    } catch (err) {
+        _didIteratorError11 = true;
+        _iteratorError11 = err;
+    } finally {
+        try {
+            if (!_iteratorNormalCompletion11 && _iterator11.return) {
+                _iterator11.return();
+            }
+        } finally {
+            if (_didIteratorError11) {
+                throw _iteratorError11;
+            }
+        }
+    }
+
+    var _iteratorNormalCompletion12 = true;
+    var _didIteratorError12 = false;
+    var _iteratorError12 = undefined;
+
+    try {
+        for (var _iterator12 = movableBodiesV3[Symbol.iterator](), _step12; !(_iteratorNormalCompletion12 = (_step12 = _iterator12.next()).done); _iteratorNormalCompletion12 = true) {
+            var movableBody3 = _step12.value;
+
+            movableBody3.draw();
+        }
+    } catch (err) {
+        _didIteratorError12 = true;
+        _iteratorError12 = err;
+    } finally {
+        try {
+            if (!_iteratorNormalCompletion12 && _iterator12.return) {
+                _iterator12.return();
+            }
+        } finally {
+            if (_didIteratorError12) {
+                throw _iteratorError12;
             }
         }
     }
