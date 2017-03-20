@@ -5,6 +5,7 @@ const DEFAULT_UNIVERSE_SETTINGS = {
     eraseTrails: false
 };
 
+
 var canvas,
     ctx,
     n = 0;
@@ -323,38 +324,36 @@ function MovableBodyV3(options, bodyList) {
     }
     
     this.combine = function(other) {
-        var newCoords = this.coords;
-        var newMass;
-        var newVelocity = {
+        var newBodyOptions = {};
+
+        newBodyOptions.coords = {
+            x: (this.mass*this.coords.x + other.mass*other.coords.x)/(this.mass + other.mass),
+            y: (this.mass*this.coords.y + other.mass*other.coords.y)/(this.mass + other.mass)
+        }
+        newBodyOptions.velocity = {
             x: (this.mass*this.velocity.x + other.mass*other.velocity.x)/(this.mass + other.mass),
             y: (this.mass*this.velocity.y + other.mass*other.velocity.y)/(this.mass + other.mass)
-        };
-        
-        
-        
-        if (this.isRepeller === other.isRepeller) {
-            newMass = this.mass + other.mass;
-            bodyList.push(new MovableBodyV3({
-                coords: newCoords,
-                mass: newMass,
-                velocity: newVelocity,
-                isRepeller: this.isRepeller,
-                isInfluenced: this.isInfluenced && other.isInfluenced
-            }, bodyList));
-            console.log(this.isInfluenced && other.isInfluenced);
-        } else {
-            if (this.mass > other.mass) {
-                newMass = this.mass - other.mass;
-                bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, this.isRepeller, bodyList));
-            } else if (this.mass < other.mass) {
-                newMass = other.mass - this.mass;
-                bodyList.push(new MovableBodyV2(newMass, newCoords, newVelocity, other.isRepeller, bodyList));
-            }
         }
         
-        
+        if (this.isRepeller === other.isRepeller) {
+            newBodyOptions.mass = this.mass + other.mass;
+            newBodyOptions.isRepeller = this.isRepeller;
+            newBodyOptions.isInfluenced = this.isInfluenced && other.isInfluenced;
+        } else {
+            if (this.mass > other.mass) {
+                newBodyOptions.mass = this.mass - other.mass;
+                newBodyOptions.isRepeller = this.isRepeller;
+            } else if (this.mass < other.mass) {
+                newBodyOptions.mass = other.mass - this.mass;
+                newBodyOptions.isRepeller = other.isRepeller;
+            } else {
+                newBodyOptions.mass = 0;
+            }
+        }
+        if (newBodyOptions.mass !== 0) {
+            bodyList.push(new MovableBodyV3(newBodyOptions, bodyList)); 
+        }
     }
-
 };
 
 
@@ -373,7 +372,7 @@ $(document).ready(function () {
     
     
     movableBodiesV3.push(new MovableBodyV3({
-        mass: 100, 
+        mass: 400, 
         coords: {x: 500, y: 500}, 
         velocity: {x: 0 , y: 0}, 
         isRepeller: false,
