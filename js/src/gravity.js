@@ -1,5 +1,5 @@
 const DEFAULT_UNIVERSE_SETTINGS = {
-    gravity: 20,
+    gravity: 4,
     sizeMultiplier: 5,
     damping: 0,
     eraseTrails: false
@@ -240,6 +240,8 @@ function MovableBodyV3(options, bodyList) {
     // this.isRepeller = isRepeller;
     this.radius = DEFAULT_UNIVERSE_SETTINGS.sizeMultiplier*Math.pow((this.mass/Math.PI)*(3/4), 1/3);
     this.fillStyle = this.isRepeller ? "red" : "blue";
+   // this.fillStyle = `rgb(0,${Math.round(100 + Math.random()*155)},${Math.round(100 + Math.random()*155)})`;
+   this.fillStyle = `rgb(${Math.round(100 + Math.random()*155)},${Math.round(100 + Math.random()*155)},${Math.round(100 + Math.random()*155)})`;
 
     this.draw = function () {
         ctx.fillStyle = this.fillStyle;
@@ -372,7 +374,7 @@ $(document).ready(function () {
     
     
     movableBodiesV3.push(new MovableBodyV3({
-        mass: 400, 
+        mass: 5000, 
         coords: {x: 500, y: 500}, 
         velocity: {x: 0 , y: 0}, 
         isRepeller: false,
@@ -452,7 +454,7 @@ function onMouseUp(e) {
     };
     
     movableBodiesV3.push(new MovableBodyV3({
-        mass: 5, 
+        mass: 1, 
         coords: {x: clickOrigin.x, y: clickOrigin.y}, 
         velocity: {x: newVelocity.x / 100, y: newVelocity.y / 100}, 
         isRepeller: isRepeller,
@@ -484,8 +486,11 @@ function updatePositions() {
 
 function redraw() {
 //        if (DEFAULT_UNIVERSE_SETTINGS.eraseTrails) ctx.clearRect(-2000, -2000, 4000, 4000);
-    ctx.fillStyle = "rgba(0, 0, 0, .02)";
-    ctx.fillRect(-2000, -2000, 4000, 4000);
+    if (DEFAULT_UNIVERSE_SETTINGS.eraseTrails) {
+        ctx.fillStyle = "rgba(0, 0, 0, .02)";
+        ctx.fillRect(-2000, -2000, 4000, 4000);
+    }
+
     for (let fixedBody of fixedBodies) {
         fixedBody.draw();
     }
